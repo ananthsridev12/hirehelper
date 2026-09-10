@@ -1,0 +1,9 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/USERNAME/hirehelper/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R app $DEPLOYPATH
+    - /bin/cp -R public $DEPLOYPATH
+    - /bin/cp -R database $DEPLOYPATH
+    - /bin/cp routes.php $DEPLOYPATH

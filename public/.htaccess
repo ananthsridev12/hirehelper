@@ -1,0 +1,10 @@
+RewriteEngine On
+
+# Serve real files/directories (assets) directly.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Everything else goes through the front controller, with the path
+# available as $_GET['r'].
+RewriteRule ^(.*)$ index.php?r=$1 [QSA,L]

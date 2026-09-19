@@ -1,9 +1,17 @@
 ---
+# hire.easi7.in's document root is fixed at DOCROOT below (cPanel user
+# de2shrnx) -- it cannot be pointed at a public/ subfolder. So app/,
+# database/ and routes.php deploy to APPROOT, a sibling directory outside
+# the web root, and only the contents of public/ (index.php, .htaccess,
+# assets/) land in DOCROOT itself. See public/app-root.sample.php and the
+# README's deployment section for the one-time manual setup this needs.
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/USERNAME/hirehelper/
-    - /bin/mkdir -p $DEPLOYPATH
-    - /bin/cp -R app $DEPLOYPATH
-    - /bin/cp -R public $DEPLOYPATH
-    - /bin/cp -R database $DEPLOYPATH
-    - /bin/cp routes.php $DEPLOYPATH
+    - export DOCROOT=/home1/de2shrnx/hire.easi7.in/
+    - export APPROOT=/home1/de2shrnx/hirehelper-app/
+    - /bin/mkdir -p $DOCROOT
+    - /bin/mkdir -p $APPROOT
+    - /bin/cp -R app $APPROOT
+    - /bin/cp -R database $APPROOT
+    - /bin/cp routes.php $APPROOT
+    - /bin/cp -R public/. $DOCROOT

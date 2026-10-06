@@ -10,11 +10,20 @@ run on ordinary shared/cPanel hosting with no SSH, no build step, and no
 Customers browse service categories (AC repair, home cleaning, electrician,
 plumber, salon, painting, etc.), pick a service, book it for a date/time slot
 at a saved address, and pay the professional after the job. Admins verify
-providers and assign bookings to a provider who serves that category.
-Providers see their assigned jobs and move them through
-assigned → in progress → completed. Customers can rate a completed booking.
+providers and offer bookings to a provider who serves that category; the
+provider accepts or declines, and on accept a 4-digit start code is shown
+only to the customer, who shares it with the professional on arrival —
+entering it correctly moves the job assigned → in progress, and from there
+→ completed. Customers can rate a completed booking, and both sides see an
+in-app notification feed for every status change.
 
 **Roles**: `customer`, `provider`, `admin`.
+
+**Also in this repo:**
+- A JSON API under `/api/v1` (`app/Controllers/Api/*`) with bearer-token
+  auth, mirroring the website's booking flow for a mobile client.
+- `mobile/` — a Flutter app (customer + provider, one codebase) that
+  consumes that API. See `mobile/README.md` for setup.
 
 ## Local development
 
@@ -107,6 +116,15 @@ Setup, once:
 From then on, every deploy is two clicks in cPanel: **Update from
 Remote**, then **Deploy HEAD Commit** — steps 2–5 are one-time.
 
+**Updating a site that's already live** (like this one, at
+`hire.easi7.in`): deploys never touch the database automatically, by
+design. After clicking **Deploy HEAD Commit** for a commit that adds a
+`database/migrations/NNN_*.sql` file, run that file by hand once via
+**phpMyAdmin → Import** on your existing database — re-importing
+`schema.sql` would try to recreate tables that already exist and fail.
+Each migration file says at the top whether it's safe to run more than
+once.
+
 If the cPanel account, domain, or either path ever changes, update
 `DOCROOT`/`APPROOT` in `.cpanel.yml` and the path returned by
 `app-root.php` to match.
@@ -122,9 +140,13 @@ files, run by hand via phpMyAdmin — deploys never touch the database or
 - `categories` — service categories
 - `provider_categories` — which categories a provider is skilled in
 - `services` — bookable line items under a category
-- `addresses` — customer saved addresses
-- `bookings` — the booking lifecycle: pending → assigned → in_progress → completed / cancelled
+- `addresses` — customer saved addresses, with optional lat/lng
+- `provider_locations` — a provider's last GPS ping while a job is in progress
+- `bookings` — the booking lifecycle: pending → offered → assigned → in_progress → completed / cancelled, plus a start_otp the provider must enter correctly to move from assigned to in_progress
 - `reviews` — one review per completed booking
+- `api_tokens` — hashed bearer tokens for the Flutter app (see `App\Core\ApiAuth`)
+- `device_tokens` — push tokens registered by the app, ready for when a Firebase project exists (see `App\Core\Notifier`)
+- `notifications` — the in-app notification feed, read by both the website and the app
 
 ## Security baseline
 

@@ -197,6 +197,7 @@ input:focus, select:focus, textarea:focus {
 /* Status badges */
 .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
 .badge-pending { background: var(--color-warning-light); color: var(--color-warning); }
+.badge-offered { background: var(--color-warning-light); color: var(--color-warning); }
 .badge-assigned { background: var(--color-primary-light); color: var(--color-primary-dark); }
 .badge-in_progress { background: var(--color-primary-light); color: var(--color-primary-dark); }
 .badge-completed { background: var(--color-success-light); color: var(--color-success); }

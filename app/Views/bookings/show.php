@@ -1,6 +1,7 @@
 <?php
 /** @var array $booking */
 /** @var array|null $review */
+/** @var float|null $distanceKm */
 $pageTitle = 'Booking #' . $booking['id'];
 $user = current_user();
 $isCustomer = $user && (int) $user['id'] === (int) $booking['customer_id'];
@@ -42,25 +43,67 @@ $isProvider = $user && (int) $user['id'] === (int) $booking['provider_id'];
     <p><strong>Professional:</strong> <?= $booking['provider_name'] ? e($booking['provider_name']) . ' (' . e($booking['provider_phone']) . ')' : 'Not yet assigned' ?></p>
   </div>
 
-  <?php if ($isCustomer && in_array($booking['status'], ['pending', 'assigned'], true)): ?>
+  <?php if ($isCustomer && $booking['status'] === 'assigned' && $booking['start_otp']): ?>
+    <div class="card" style="border-color:var(--color-primary);">
+      <h3>Your start code</h3>
+      <p>Share this code with your professional when they arrive — it confirms they're on the right job.</p>
+      <p style="font-size:1.8rem;font-weight:800;letter-spacing:0.1em;"><?= e($booking['start_otp']) ?></p>
+    </div>
+  <?php endif; ?>
+
+  <?php if ($isCustomer && $booking['status'] === 'in_progress'): ?>
+    <div class="card">
+      <h3>Job in progress</h3>
+      <?php if ($distanceKm !== null): ?>
+        <p>Your professional is about <strong><?= round($distanceKm, 1) ?> km</strong> from your address (last updated from their device).</p>
+      <?php else: ?>
+        <p class="form-hint">Live distance will appear here once the professional's app starts sharing location.</p>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
+
+  <?php if ($isCustomer && in_array($booking['status'], ['pending', 'offered', 'assigned'], true)): ?>
     <form method="post" action="<?= url('/bookings/' . $booking['id'] . '/cancel') ?>" data-confirm="Cancel this booking?">
       <?= csrf_field() ?>
       <button type="submit" class="btn btn-danger">Cancel Booking</button>
     </form>
   <?php endif; ?>
 
+  <?php if ($isProvider && $booking['status'] === 'offered'): ?>
+    <div class="card">
+      <h3>New job offer</h3>
+      <p>Review the details above, then accept or decline.</p>
+      <div style="display:flex;gap:10px;">
+        <form method="post" action="<?= url('/provider/bookings/' . $booking['id'] . '/accept') ?>">
+          <?= csrf_field() ?>
+          <button type="submit" class="btn">Accept</button>
+        </form>
+        <form method="post" action="<?= url('/provider/bookings/' . $booking['id'] . '/reject') ?>" data-confirm="Decline this job?">
+          <?= csrf_field() ?>
+          <button type="submit" class="btn btn-outline">Decline</button>
+        </form>
+      </div>
+    </div>
+  <?php endif; ?>
+
   <?php if ($isProvider && $booking['status'] === 'assigned'): ?>
-    <form method="post" action="<?= url('/provider/bookings/' . $booking['id'] . '/status') ?>">
-      <?= csrf_field() ?>
-      <input type="hidden" name="status" value="in_progress">
-      <button type="submit" class="btn">Start Job</button>
-    </form>
+    <div class="card">
+      <h3>Start the job</h3>
+      <p>Ask the customer for their start code and enter it below.</p>
+      <form method="post" action="<?= url('/provider/bookings/' . $booking['id'] . '/start') ?>" style="display:flex;gap:10px;align-items:flex-end;">
+        <?= csrf_field() ?>
+        <div class="form-group" style="margin-bottom:0;">
+          <label for="start_otp">Start code</label>
+          <input type="text" id="start_otp" name="start_otp" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" required style="width:120px;">
+        </div>
+        <button type="submit" class="btn">Start Job</button>
+      </form>
+    </div>
   <?php endif; ?>
 
   <?php if ($isProvider && $booking['status'] === 'in_progress'): ?>
-    <form method="post" action="<?= url('/provider/bookings/' . $booking['id'] . '/status') ?>">
+    <form method="post" action="<?= url('/provider/bookings/' . $booking['id'] . '/complete') ?>">
       <?= csrf_field() ?>
-      <input type="hidden" name="status" value="completed">
       <button type="submit" class="btn">Mark Completed</button>
     </form>
   <?php endif; ?>
@@ -93,3 +136,25 @@ $isProvider = $user && (int) $user['id'] === (int) $booking['provider_id'];
     </div>
   <?php endif; ?>
 </div>
+
+<?php if ($isProvider && $booking['status'] === 'in_progress'): ?>
+<script>
+(function () {
+  // Pings this provider's location every 45s while this job's page is
+  // open, so the customer's page above can show a live distance. The
+  // Flutter app does the same thing in the background via geolocator.
+  if (!navigator.geolocation) return;
+  function ping() {
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var body = new URLSearchParams();
+      body.set('_csrf', document.querySelector('input[name="_csrf"]').value);
+      body.set('lat', pos.coords.latitude);
+      body.set('lng', pos.coords.longitude);
+      fetch('<?= url('/provider/location-ping') ?>', { method: 'POST', body: body }).catch(function () {});
+    });
+  }
+  ping();
+  setInterval(ping, 45000);
+})();
+</script>
+<?php endif; ?>

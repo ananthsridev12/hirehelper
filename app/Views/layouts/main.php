@@ -1,6 +1,7 @@
 <?php
 /** @var string $content */
 $user = current_user();
+$unreadCount = $user ? (new \App\Models\Notification())->unreadCount((int) $user['id']) : 0;
 ?>
 <!doctype html>
 <html lang="en">
@@ -24,6 +25,7 @@ $user = current_user();
           <?php elseif ($user['role'] === 'admin'): ?>
             <a href="<?= url('/admin') ?>">Admin</a>
           <?php endif; ?>
+          <a href="<?= url('/notifications') ?>">Notifications<?= $unreadCount > 0 ? ' <span class="badge-role">' . $unreadCount . '</span>' : '' ?></a>
           <div class="nav-user">
             <span><?= e($user['name']) ?></span>
             <span class="badge-role"><?= e($user['role']) ?></span>
@@ -53,7 +55,9 @@ $user = current_user();
 
   <footer class="site-footer">
     <div class="container">
-      &copy; <?= date('Y') ?> HireHelper. Home services, on demand.
+      &copy; <?= date('Y') ?> HireHelper. Home services, on demand. &middot;
+      <a href="<?= url('/privacy') ?>">Privacy</a> &middot;
+      <a href="<?= url('/terms') ?>">Terms</a>
     </div>
   </footer>
 

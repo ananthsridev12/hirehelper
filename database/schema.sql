@@ -92,10 +92,24 @@ CREATE TABLE IF NOT EXISTS addresses (
     state VARCHAR(120) NOT NULL DEFAULT '',
     pincode VARCHAR(10) NOT NULL,
     phone VARCHAR(20) NOT NULL,
+    lat DECIMAL(10,7) NULL,
+    lng DECIMAL(10,7) NULL,
     is_default TINYINT(1) NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     KEY idx_addresses_user (user_id),
     CONSTRAINT fk_addresses_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
+-- provider_locations (provider's most recent GPS ping while on a job)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS provider_locations (
+    provider_id INT UNSIGNED NOT NULL,
+    lat DECIMAL(10,7) NOT NULL,
+    lng DECIMAL(10,7) NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (provider_id),
+    CONSTRAINT fk_provider_locations_user FOREIGN KEY (provider_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ---------------------------------------------------------------------
@@ -109,9 +123,10 @@ CREATE TABLE IF NOT EXISTS bookings (
     address_id INT UNSIGNED NOT NULL,
     scheduled_date DATE NOT NULL,
     scheduled_time_slot VARCHAR(40) NOT NULL,
-    status ENUM('pending', 'assigned', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
+    status ENUM('pending', 'offered', 'assigned', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
     price DECIMAL(10,2) NOT NULL,
     payment_status ENUM('unpaid', 'paid') NOT NULL DEFAULT 'unpaid',
+    start_otp CHAR(4) NULL,
     notes TEXT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -143,6 +158,58 @@ CREATE TABLE IF NOT EXISTS reviews (
     CONSTRAINT fk_reviews_customer FOREIGN KEY (customer_id) REFERENCES users(id),
     CONSTRAINT fk_reviews_provider FOREIGN KEY (provider_id) REFERENCES users(id),
     CONSTRAINT chk_reviews_rating CHECK (rating BETWEEN 1 AND 5)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
+-- api_tokens (bearer tokens for the Flutter app; web login still uses
+-- plain PHP sessions and never touches this table)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id INT UNSIGNED NOT NULL,
+    token_hash CHAR(64) NOT NULL,
+    device_label VARCHAR(100) NOT NULL DEFAULT '',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_used_at DATETIME NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_api_tokens_hash (token_hash),
+    KEY idx_api_tokens_user (user_id),
+    CONSTRAINT fk_api_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
+-- device_tokens (push tokens registered by the Flutter app; stored
+-- ready for when a Firebase project is wired up to actually send to
+-- them -- see app/Core/Push.php)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS device_tokens (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id INT UNSIGNED NOT NULL,
+    push_token VARCHAR(255) NOT NULL,
+    platform ENUM('android', 'ios') NOT NULL DEFAULT 'android',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_device_tokens_token (push_token),
+    KEY idx_device_tokens_user (user_id),
+    CONSTRAINT fk_device_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------
+-- notifications (in-app notification feed, read by both the website
+-- and the Flutter app; independent of OS push delivery)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id INT UNSIGNED NOT NULL,
+    title VARCHAR(150) NOT NULL,
+    body VARCHAR(255) NOT NULL DEFAULT '',
+    booking_id INT UNSIGNED NULL,
+    is_read TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_notifications_user (user_id, is_read),
+    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_notifications_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 1;

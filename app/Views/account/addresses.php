@@ -1,6 +1,7 @@
 <?php
 /** @var array $addresses */
 /** @var array $errors */
+/** @var string $googleMapsKey */
 $pageTitle = 'My Addresses';
 ?>
 <div class="container">
@@ -36,8 +37,19 @@ $pageTitle = 'My Addresses';
 
     <div class="card">
       <h3>Add new address</h3>
-      <form method="post" action="<?= url('/account/addresses') ?>">
+
+      <button type="button" id="use-location-btn" class="btn btn-outline btn-block" style="margin-bottom:12px;">
+        <?= icon('map-pin') ?> Use my current GPS location
+      </button>
+      <p id="location-status" class="form-hint" style="margin-top:-6px;margin-bottom:12px;"></p>
+      <?php if ($googleMapsKey): ?>
+        <div id="address-map" style="height:200px;border-radius:8px;margin-bottom:12px;background:var(--color-primary-light);"></div>
+      <?php endif; ?>
+
+      <form method="post" action="<?= url('/account/addresses') ?>" id="address-form">
         <?= csrf_field() ?>
+        <input type="hidden" name="lat" id="lat">
+        <input type="hidden" name="lng" id="lng">
         <div class="form-group">
           <label for="label">Label</label>
           <input type="text" id="label" name="label" placeholder="Home, Office..." value="Home">
@@ -79,3 +91,9 @@ $pageTitle = 'My Addresses';
     </div>
   </div>
 </div>
+
+<?php if ($googleMapsKey): ?>
+  <script>window.HIREHELPER_MAPS_KEY = <?= json_encode($googleMapsKey) ?>;</script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=<?= urlencode($googleMapsKey) ?>&libraries=places&callback=initAddressMap" async defer></script>
+<?php endif; ?>
+<script src="<?= asset('js/address-map.js') ?>"></script>

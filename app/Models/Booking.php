@@ -7,6 +7,7 @@ class Booking extends BaseModel
     protected string $table = 'bookings';
 
     public const STATUS_PENDING = 'pending';
+    public const STATUS_OFFERED = 'offered';
     public const STATUS_ASSIGNED = 'assigned';
     public const STATUS_IN_PROGRESS = 'in_progress';
     public const STATUS_COMPLETED = 'completed';
@@ -18,7 +19,8 @@ class Booking extends BaseModel
                c.id AS category_id, c.name AS category_name,
                cust.name AS customer_name, cust.phone AS customer_phone,
                prov.name AS provider_name, prov.phone AS provider_phone,
-               a.line1, a.line2, a.city, a.state, a.pincode, a.phone AS address_phone, a.label AS address_label
+               a.line1, a.line2, a.city, a.state, a.pincode, a.phone AS address_phone,
+               a.label AS address_label, a.lat AS address_lat, a.lng AS address_lng
         FROM bookings b
         INNER JOIN services s ON s.id = b.service_id
         INNER JOIN categories c ON c.id = s.category_id
@@ -63,12 +65,48 @@ class Booking extends BaseModel
         return $stmt->fetchAll();
     }
 
-    public function assignProvider(int $bookingId, int $providerId): bool
+    /**
+     * Admin offers the job to a provider. The provider must still accept
+     * it (acceptOffer) before it's really theirs -- mirrors how Urban
+     * Company-style apps let a professional decline a lead.
+     */
+    public function offerToProvider(int $bookingId, int $providerId): bool
     {
         return $this->update($bookingId, [
             'provider_id' => $providerId,
-            'status' => self::STATUS_ASSIGNED,
+            'status' => self::STATUS_OFFERED,
         ]);
+    }
+
+    public function acceptOffer(int $bookingId): string
+    {
+        $otp = (string) random_int(1000, 9999);
+        $this->update($bookingId, [
+            'status' => self::STATUS_ASSIGNED,
+            'start_otp' => $otp,
+        ]);
+        return $otp;
+    }
+
+    public function rejectOffer(int $bookingId): bool
+    {
+        return $this->update($bookingId, [
+            'provider_id' => null,
+            'status' => self::STATUS_PENDING,
+            'start_otp' => null,
+        ]);
+    }
+
+    /**
+     * Provider enters the OTP shown in the customer's app/booking page to
+     * prove they're on site before the job can start.
+     */
+    public function startWithOtp(int $bookingId, string $otp, string $expectedOtp): bool
+    {
+        if (!hash_equals($expectedOtp, $otp)) {
+            return false;
+        }
+        return $this->update($bookingId, ['status' => self::STATUS_IN_PROGRESS]);
     }
 
     public function updateStatus(int $bookingId, string $status): bool

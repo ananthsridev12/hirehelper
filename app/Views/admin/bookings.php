@@ -3,7 +3,7 @@
 /** @var string|null $status */
 /** @var array $eligibleProviders */
 $pageTitle = 'Bookings';
-$statuses = ['pending', 'assigned', 'in_progress', 'completed', 'cancelled'];
+$statuses = ['pending', 'offered', 'assigned', 'in_progress', 'completed', 'cancelled'];
 ?>
 <div class="page-header">
   <h1 class="section-title">Bookings</h1>
@@ -39,12 +39,16 @@ $statuses = ['pending', 'assigned', 'in_progress', 'completed', 'cancelled'];
                   <select name="provider_id" required>
                     <option value="">Assign to...</option>
                     <?php foreach ($options as $provider): ?>
-                      <option value="<?= (int) $provider['id'] ?>"><?= e($provider['name']) ?></option>
+                      <option value="<?= (int) $provider['id'] ?>">
+                        <?= e($provider['name']) ?><?= isset($provider['distance_km']) && $provider['distance_km'] !== null ? ' (' . round($provider['distance_km'], 1) . ' km)' : '' ?>
+                      </option>
                     <?php endforeach; ?>
                   </select>
-                  <button type="submit" class="btn btn-sm">Assign</button>
+                  <button type="submit" class="btn btn-sm">Offer</button>
                 </form>
               <?php endif; ?>
+            <?php elseif ($booking['status'] === 'offered'): ?>
+              <?= e($booking['provider_name']) ?> <span class="form-hint">(awaiting response)</span>
             <?php else: ?>
               <?= e($booking['provider_name'] ?? '-') ?>
             <?php endif; ?>

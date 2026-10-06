@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\Config;
 use App\Core\Flash;
 use App\Core\Request;
 use App\Models\Address;
@@ -13,7 +14,11 @@ class AddressController extends BaseController
     {
         $this->requireLogin();
         $addresses = (new Address())->forUser(Auth::id());
-        view('account/addresses', ['addresses' => $addresses, 'errors' => []]);
+        view('account/addresses', [
+            'addresses' => $addresses,
+            'errors' => [],
+            'googleMapsKey' => Config::get('maps.google_maps_key', ''),
+        ]);
     }
 
     public function store(): void
@@ -31,6 +36,11 @@ class AddressController extends BaseController
             'phone' => (string) Request::input('phone', ''),
         ];
 
+        $lat = Request::input('lat', '');
+        $lng = Request::input('lng', '');
+        $data['lat'] = $lat !== '' && is_numeric($lat) ? round((float) $lat, 7) : null;
+        $data['lng'] = $lng !== '' && is_numeric($lng) ? round((float) $lng, 7) : null;
+
         $errors = [];
         if ($data['line1'] === '') {
             $errors[] = 'Address line is required.';
@@ -47,7 +57,11 @@ class AddressController extends BaseController
 
         if (!empty($errors)) {
             $addresses = (new Address())->forUser(Auth::id());
-            view('account/addresses', ['addresses' => $addresses, 'errors' => $errors]);
+            view('account/addresses', [
+                'addresses' => $addresses,
+                'errors' => $errors,
+                'googleMapsKey' => Config::get('maps.google_maps_key', ''),
+            ]);
             return;
         }
 

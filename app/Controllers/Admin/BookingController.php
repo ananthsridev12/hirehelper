@@ -5,6 +5,8 @@ namespace App\Controllers\Admin;
 use App\Controllers\BaseController;
 use App\Core\Auth;
 use App\Core\Flash;
+use App\Core\Geo;
+use App\Core\Notifier;
 use App\Core\Request;
 use App\Models\Booking;
 use App\Models\User;
@@ -21,11 +23,39 @@ class BookingController extends BaseController
         $eligibleProviders = [];
         foreach ($bookings as $booking) {
             if ($booking['status'] === Booking::STATUS_PENDING && !isset($eligibleProviders[$booking['category_id']])) {
-                $eligibleProviders[$booking['category_id']] = $userModel->providersByCategory((int) $booking['category_id']);
+                $providers = $userModel->providersByCategory((int) $booking['category_id']);
+                $eligibleProviders[$booking['category_id']] = $this->sortByDistance($providers, $booking);
             }
         }
 
         view('admin/bookings', ['bookings' => $bookings, 'status' => $status, 'eligibleProviders' => $eligibleProviders], 'admin');
+    }
+
+    /**
+     * Nearest-first when both the job address and the provider's last GPS
+     * ping are known; providers with no location yet sort to the end but
+     * stay selectable (most won't have pinged until the mobile app does).
+     */
+    private function sortByDistance(array $providers, array $booking): array
+    {
+        if ($booking['address_lat'] === null || $booking['address_lng'] === null) {
+            return $providers;
+        }
+
+        foreach ($providers as &$provider) {
+            $provider['distance_km'] = ($provider['last_lat'] !== null && $provider['last_lng'] !== null)
+                ? Geo::distanceKm((float) $booking['address_lat'], (float) $booking['address_lng'], (float) $provider['last_lat'], (float) $provider['last_lng'])
+                : null;
+        }
+        unset($provider);
+
+        usort($providers, function ($a, $b) {
+            if ($a['distance_km'] === null) return $b['distance_km'] === null ? 0 : 1;
+            if ($b['distance_km'] === null) return -1;
+            return $a['distance_km'] <=> $b['distance_km'];
+        });
+
+        return $providers;
     }
 
     public function assign(string $id): void
@@ -50,8 +80,9 @@ class BookingController extends BaseController
             return;
         }
 
-        $bookingModel->assignProvider((int) $id, $providerId);
-        Flash::success('Provider assigned.');
+        $bookingModel->offerToProvider((int) $id, $providerId);
+        Notifier::notify($providerId, 'New job offer', 'You have a new job to review.', (int) $id);
+        Flash::success('Job offered to the provider — they still need to accept it.');
         redirect('/admin/bookings');
     }
 }

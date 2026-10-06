@@ -11,7 +11,7 @@ $avg = $rating['avg_rating'] !== null ? round((float) $rating['avg_rating'], 1) 
   <div class="stat-grid">
     <div class="stat-card">
       <div class="value"><?= count($bookings) ?></div>
-      <div class="label">Total assigned jobs</div>
+      <div class="label">Total jobs</div>
     </div>
     <div class="stat-card">
       <div class="value"><?= $avg !== null ? $avg : '-' ?></div>

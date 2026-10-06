@@ -4,10 +4,13 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Flash;
+use App\Core\Geo;
+use App\Core\Notifier;
 use App\Core\Request;
 use App\Core\Response;
 use App\Models\Address;
 use App\Models\Booking;
+use App\Models\ProviderLocation;
 use App\Models\Review;
 use App\Models\Service;
 
@@ -106,7 +109,21 @@ class BookingController extends BaseController
             return;
         }
         $review = (new Review())->findByBooking((int) $booking['id']);
-        view('bookings/show', ['booking' => $booking, 'review' => $review]);
+
+        $distanceKm = null;
+        if ($booking['status'] === Booking::STATUS_IN_PROGRESS && $booking['provider_id'] && $booking['address_lat'] !== null) {
+            $location = (new ProviderLocation())->forProvider((int) $booking['provider_id']);
+            if ($location) {
+                $distanceKm = Geo::distanceKm(
+                    (float) $booking['address_lat'],
+                    (float) $booking['address_lng'],
+                    (float) $location['lat'],
+                    (float) $location['lng']
+                );
+            }
+        }
+
+        view('bookings/show', ['booking' => $booking, 'review' => $review, 'distanceKm' => $distanceKm]);
     }
 
     public function cancel(string $id): void
@@ -120,13 +137,16 @@ class BookingController extends BaseController
             Response::notFound();
             return;
         }
-        if (!in_array($booking['status'], [Booking::STATUS_PENDING, Booking::STATUS_ASSIGNED], true)) {
+        if (!in_array($booking['status'], [Booking::STATUS_PENDING, Booking::STATUS_OFFERED, Booking::STATUS_ASSIGNED], true)) {
             Flash::error('This booking can no longer be cancelled.');
             redirect('/bookings/' . $id);
             return;
         }
 
         $bookingModel->updateStatus((int) $id, Booking::STATUS_CANCELLED);
+        if ($booking['provider_id']) {
+            Notifier::notify((int) $booking['provider_id'], 'Booking cancelled', 'The customer cancelled a job that was offered to you.', (int) $id);
+        }
         Flash::success('Booking cancelled.');
         redirect('/bookings/' . $id);
     }

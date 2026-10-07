@@ -14,7 +14,7 @@ $icons = ['home', 'clock', 'check', 'star', 'user', 'calendar', 'map-pin', 'phon
 
 <div class="card">
   <h3>Add category</h3>
-  <form method="post" action="<?= url('/admin/categories') ?>">
+  <form method="post" action="<?= url('/admin/categories') ?>" enctype="multipart/form-data">
     <?= csrf_field() ?>
     <div class="form-row">
       <div class="form-group">
@@ -22,7 +22,7 @@ $icons = ['home', 'clock', 'check', 'star', 'user', 'calendar', 'map-pin', 'phon
         <input type="text" id="name" name="name" required>
       </div>
       <div class="form-group">
-        <label for="icon">Icon</label>
+        <label for="icon">Fallback icon</label>
         <select id="icon" name="icon">
           <?php foreach ($icons as $icon): ?>
             <option value="<?= e($icon) ?>"><?= e($icon) ?></option>
@@ -34,9 +34,15 @@ $icons = ['home', 'clock', 'check', 'star', 'user', 'calendar', 'map-pin', 'phon
         <input type="number" id="sort_order" name="sort_order" value="0">
       </div>
     </div>
-    <div class="form-group">
-      <label for="description">Description</label>
-      <input type="text" id="description" name="description">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="description">Description</label>
+        <input type="text" id="description" name="description">
+      </div>
+      <div class="form-group">
+        <label for="image">Image (optional, shown instead of the icon)</label>
+        <input type="file" id="image" name="image" accept="image/*">
+      </div>
     </div>
     <button type="submit" class="btn">Add Category</button>
   </form>
@@ -45,11 +51,18 @@ $icons = ['home', 'clock', 'check', 'star', 'user', 'calendar', 'map-pin', 'phon
 <div class="card table-wrap">
   <table>
     <thead>
-      <tr><th>Name</th><th>Slug</th><th>Status</th><th>Order</th><th></th></tr>
+      <tr><th>Image</th><th>Name</th><th>Slug</th><th>Status</th><th>Order</th><th></th></tr>
     </thead>
     <tbody>
       <?php foreach ($categories as $category): ?>
         <tr>
+          <td>
+            <?php if (!empty($category['image_path'])): ?>
+              <img class="table-thumb" src="<?= asset($category['image_path']) ?>" alt="">
+            <?php else: ?>
+              <span class="form-hint">&mdash;</span>
+            <?php endif; ?>
+          </td>
           <td><?= e($category['name']) ?></td>
           <td><?= e($category['slug']) ?></td>
           <td><span class="badge badge-<?= $category['is_active'] ? 'paid' : 'unpaid' ?>"><?= $category['is_active'] ? 'Active' : 'Inactive' ?></span></td>

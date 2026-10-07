@@ -17,7 +17,7 @@ $pageTitle = 'Services';
   <?php if (empty($categories)): ?>
     <p class="form-hint">Create a category first before adding services.</p>
   <?php else: ?>
-    <form method="post" action="<?= url('/admin/services') ?>">
+    <form method="post" action="<?= url('/admin/services') ?>" enctype="multipart/form-data">
       <?= csrf_field() ?>
       <div class="form-row">
         <div class="form-group">
@@ -43,9 +43,15 @@ $pageTitle = 'Services';
           <input type="number" id="duration_minutes" name="duration_minutes" value="60">
         </div>
       </div>
-      <div class="form-group">
-        <label for="description">Description</label>
-        <textarea id="description" name="description"></textarea>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" name="description"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="image">Image (optional)</label>
+          <input type="file" id="image" name="image" accept="image/*">
+        </div>
       </div>
       <button type="submit" class="btn">Add Service</button>
     </form>
@@ -55,11 +61,18 @@ $pageTitle = 'Services';
 <div class="card table-wrap">
   <table>
     <thead>
-      <tr><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th></th></tr>
+      <tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th></th></tr>
     </thead>
     <tbody>
       <?php foreach ($services as $service): ?>
         <tr>
+          <td>
+            <?php if (!empty($service['image_path'])): ?>
+              <img class="table-thumb" src="<?= asset($service['image_path']) ?>" alt="">
+            <?php else: ?>
+              <span class="form-hint">&mdash;</span>
+            <?php endif; ?>
+          </td>
           <td><?= e($service['name']) ?></td>
           <td><?= e($service['category_name']) ?></td>
           <td><?= money((float) $service['price']) ?></td>

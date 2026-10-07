@@ -29,6 +29,7 @@ class AuthController extends BaseController
             'phone' => Request::input('phone', ''),
             'role' => Request::input('role', 'customer'),
             'city' => Request::input('city', ''),
+            'referral_code' => Request::input('referral_code', ''),
         ];
         $categoryIds = array_map('intval', (array) ($_POST['categories'] ?? []));
 
@@ -61,6 +62,14 @@ class AuthController extends BaseController
             $errors[] = 'An account with that email already exists.';
         }
 
+        $referrer = null;
+        if (empty($errors) && $old['referral_code'] !== '') {
+            $referrer = $userModel->findByReferralCode($old['referral_code']);
+            if (!$referrer) {
+                $errors[] = 'That referral code was not found.';
+            }
+        }
+
         if (!empty($errors)) {
             $categories = (new Category())->active();
             view('auth/register', ['categories' => $categories, 'errors' => $errors, 'old' => $old]);
@@ -74,6 +83,8 @@ class AuthController extends BaseController
             'password_hash' => password_hash($password, PASSWORD_DEFAULT),
             'role' => $role,
             'status' => 'active',
+            'referral_code' => $userModel->generateReferralCode(),
+            'referred_by' => $referrer ? $referrer['id'] : null,
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
@@ -88,9 +99,14 @@ class AuthController extends BaseController
             $profile->setCategories($userId, $categoryIds);
         }
 
+        if ($referrer) {
+            $userModel->adjustWallet($userId, User::REFERRAL_BONUS, 'Referral signup bonus');
+            $userModel->adjustWallet((int) $referrer['id'], User::REFERRAL_BONUS, 'Referred ' . $name);
+        }
+
         $user = $userModel->find($userId);
         Auth::login($user);
-        Flash::success('Welcome, ' . $name . '!');
+        Flash::success('Welcome, ' . $name . '!' . ($referrer ? ' You\'ve been credited ' . money(User::REFERRAL_BONUS) . ' in your wallet.' : ''));
         redirect($role === 'provider' ? '/provider/dashboard' : '/');
     }
 

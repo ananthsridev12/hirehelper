@@ -51,7 +51,7 @@ class ProviderProfile extends BaseModel
     public function allWithUser(): array
     {
         $stmt = $this->db()->query(
-            "SELECT u.id, u.name, u.email, u.phone, u.status, pp.bio, pp.city, pp.is_verified, pp.is_available
+            "SELECT u.id, u.name, u.email, u.phone, u.status, pp.bio, pp.photo_path, pp.experience_years, pp.city, pp.is_verified, pp.is_available
              FROM users u INNER JOIN provider_profiles pp ON pp.user_id = u.id
              WHERE u.role = 'provider' ORDER BY u.name ASC"
         );

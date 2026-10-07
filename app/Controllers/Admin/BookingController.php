@@ -4,6 +4,7 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
 use App\Core\Auth;
+use App\Core\Dispatcher;
 use App\Core\Flash;
 use App\Core\Geo;
 use App\Core\Notifier;
@@ -81,8 +82,31 @@ class BookingController extends BaseController
         }
 
         $bookingModel->offerToProvider((int) $id, $providerId);
+        Dispatcher::logOffer((int) $id, $providerId);
         Notifier::notify($providerId, 'New job offer', 'You have a new job to review.', (int) $id);
         Flash::success('Job offered to the provider — they still need to accept it.');
         redirect('/admin/bookings');
+    }
+
+    public function export(): void
+    {
+        $this->requireRole(Auth::ROLE_ADMIN);
+
+        $bookings = (new Booking())->allDetailed(Request::query('status') ?: null);
+
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="bookings-' . date('Y-m-d') . '.csv"');
+
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['ID', 'Service', 'Customer', 'Provider', 'Date', 'Slot', 'Status', 'Price', 'Discount', 'Payment Status', 'Created At'], ',', '"', '\\');
+        foreach ($bookings as $b) {
+            fputcsv($out, [
+                $b['id'], $b['service_name'], $b['customer_name'], $b['provider_name'] ?? '-',
+                $b['scheduled_date'], $b['scheduled_time_slot'], $b['status'], $b['price'],
+                $b['discount_amount'], $b['payment_status'], $b['created_at'],
+            ], ',', '"', '\\');
+        }
+        fclose($out);
+        exit;
     }
 }

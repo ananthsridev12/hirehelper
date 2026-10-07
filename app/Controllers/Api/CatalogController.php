@@ -2,6 +2,7 @@
 
 namespace App\Controllers\Api;
 
+use App\Core\Request;
 use App\Core\Response;
 use App\Models\Category;
 use App\Models\Service;
@@ -22,6 +23,13 @@ class CatalogController extends BaseApiController
         }
         $services = (new Service())->activeByCategory((int) $category['id']);
         Response::json(['category' => $category, 'services' => $services]);
+    }
+
+    public function search(): void
+    {
+        $query = trim((string) Request::query('q', ''));
+        $results = $query !== '' ? (new Service())->search($query) : [];
+        Response::json(['results' => $results]);
     }
 
     public function serviceDetail(string $slug): void

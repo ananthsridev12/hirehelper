@@ -20,6 +20,7 @@ class AuthController extends BaseApiController
         $city = (string) Request::input('city', '');
         $categoryIds = array_map('intval', (array) Request::input('categories', []));
         $deviceLabel = (string) Request::input('device_label', '');
+        $referralCode = trim((string) Request::input('referral_code', ''));
 
         $errors = [];
         if ($name === '') $errors[] = 'Name is required.';
@@ -34,6 +35,13 @@ class AuthController extends BaseApiController
         if (empty($errors) && $userModel->findByEmail($email)) {
             $errors[] = 'An account with that email already exists.';
         }
+
+        $referrer = null;
+        if (empty($errors) && $referralCode !== '') {
+            $referrer = $userModel->findByReferralCode($referralCode);
+            if (!$referrer) $errors[] = 'That referral code was not found.';
+        }
+
         if (!empty($errors)) {
             $this->fail(implode(' ', $errors));
             return;
@@ -46,6 +54,8 @@ class AuthController extends BaseApiController
             'password_hash' => password_hash($password, PASSWORD_DEFAULT),
             'role' => $role,
             'status' => 'active',
+            'referral_code' => $userModel->generateReferralCode(),
+            'referred_by' => $referrer ? $referrer['id'] : null,
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
@@ -55,9 +65,25 @@ class AuthController extends BaseApiController
             $profile->setCategories($userId, $categoryIds);
         }
 
+        if ($referrer) {
+            $userModel->adjustWallet($userId, User::REFERRAL_BONUS, 'Referral signup bonus');
+            $userModel->adjustWallet((int) $referrer['id'], User::REFERRAL_BONUS, 'Referred ' . $name);
+        }
+
         $user = $userModel->find($userId);
         $token = ApiAuth::issue($userId, $deviceLabel);
         Response::json(['user' => $this->publicUser($user), 'token' => $token], 201);
+    }
+
+    public function wallet(): void
+    {
+        $user = $this->authenticate();
+        $userModel = new User();
+        Response::json([
+            'balance' => (float) $user['wallet_balance'],
+            'referral_code' => $user['referral_code'],
+            'history' => $userModel->walletHistory((int) $user['id']),
+        ]);
     }
 
     public function login(): void

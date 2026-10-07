@@ -55,6 +55,16 @@ $slots = ['09:00 AM - 11:00 AM', '11:00 AM - 01:00 PM', '02:00 PM - 04:00 PM', '
             <textarea id="notes" name="notes" placeholder="e.g. gate code, specific issue details"></textarea>
           </div>
 
+          <div class="form-group">
+            <label for="coupon_code">Coupon code (optional)</label>
+            <div class="coupon-row">
+              <div class="form-group">
+                <input type="text" id="coupon_code" name="coupon_code" placeholder="e.g. FIRST100" style="text-transform:uppercase;">
+              </div>
+            </div>
+            <div class="form-hint">Try <strong>FIRST100</strong> or <strong>SAVE20</strong>.</div>
+          </div>
+
           <button type="submit" class="btn btn-block">Confirm Booking</button>
         </form>
       <?php endif; ?>

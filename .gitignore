@@ -1,3 +1,8 @@
 config/config.php
 public/app-root.php
 .DS_Store
+
+# User-uploaded images -- never commit real uploads, but keep the
+# directories themselves (via .gitkeep) so they exist on a fresh deploy.
+public/assets/uploads/*/*
+!public/assets/uploads/*/.gitkeep

@@ -6,6 +6,8 @@ class User extends BaseModel
 {
     protected string $table = 'users';
 
+    public const REFERRAL_BONUS = 100.00;
+
     public function findByEmail(string $email): ?array
     {
         return $this->findBy('email', $email);
@@ -33,6 +35,41 @@ class User extends BaseModel
              ORDER BY pp.is_verified DESC, u.name ASC"
         );
         $stmt->execute([$categoryId]);
+        return $stmt->fetchAll();
+    }
+
+    public function findByReferralCode(string $code): ?array
+    {
+        return $this->findBy('referral_code', strtoupper($code));
+    }
+
+    public function generateReferralCode(): string
+    {
+        do {
+            $code = strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+        } while ($this->findByReferralCode($code));
+        return $code;
+    }
+
+    /**
+     * Positive $amount credits the wallet, negative debits it. Every
+     * change is logged to wallet_transactions for a visible history.
+     */
+    public function adjustWallet(int $userId, float $amount, string $reason, ?int $bookingId = null): void
+    {
+        $stmt = $this->db()->prepare("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?");
+        $stmt->execute([$amount, $userId]);
+
+        $log = $this->db()->prepare(
+            "INSERT INTO wallet_transactions (user_id, amount, reason, booking_id, created_at) VALUES (?, ?, ?, ?, ?)"
+        );
+        $log->execute([$userId, $amount, $reason, $bookingId, date('Y-m-d H:i:s')]);
+    }
+
+    public function walletHistory(int $userId): array
+    {
+        $stmt = $this->db()->prepare("SELECT * FROM wallet_transactions WHERE user_id = ? ORDER BY created_at DESC");
+        $stmt->execute([$userId]);
         return $stmt->fetchAll();
     }
 }

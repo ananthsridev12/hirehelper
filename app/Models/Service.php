@@ -44,6 +44,19 @@ class Service extends BaseModel
         return $row ?: null;
     }
 
+    public function search(string $query): array
+    {
+        $stmt = $this->db()->prepare(
+            "SELECT s.*, c.name AS category_name, c.slug AS category_slug
+             FROM services s INNER JOIN categories c ON c.id = s.category_id
+             WHERE s.is_active = 1 AND (s.name LIKE ? OR s.description LIKE ? OR c.name LIKE ?)
+             ORDER BY s.name ASC"
+        );
+        $like = '%' . $query . '%';
+        $stmt->execute([$like, $like, $like]);
+        return $stmt->fetchAll();
+    }
+
     public function ratingSummary(int $serviceId): array
     {
         $stmt = $this->db()->prepare(

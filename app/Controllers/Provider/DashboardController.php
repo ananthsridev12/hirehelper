@@ -4,10 +4,12 @@ namespace App\Controllers\Provider;
 
 use App\Controllers\BaseController;
 use App\Core\Auth;
+use App\Core\Dispatcher;
 use App\Core\Flash;
 use App\Core\Notifier;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\Upload;
 use App\Models\Booking;
 use App\Models\ProviderLocation;
 use App\Models\ProviderProfile;
@@ -27,6 +29,42 @@ class DashboardController extends BaseController
             'profile' => $profile,
             'rating' => $rating,
         ], 'main');
+    }
+
+    public function editProfile(): void
+    {
+        $this->requireRole(Auth::ROLE_PROVIDER);
+        $profile = (new ProviderProfile())->findByUserId(Auth::id());
+        view('provider/profile', ['profile' => $profile, 'errors' => []], 'main');
+    }
+
+    public function updateProfile(): void
+    {
+        $this->requireRole(Auth::ROLE_PROVIDER);
+        $this->verifyCsrf();
+
+        $bio = (string) Request::input('bio', '');
+        $experience = Request::input('experience_years', '');
+
+        try {
+            $photoPath = Upload::image(Request::file('photo'), 'providers');
+        } catch (\RuntimeException $e) {
+            $profile = (new ProviderProfile())->findByUserId(Auth::id());
+            view('provider/profile', ['profile' => $profile, 'errors' => [$e->getMessage()]], 'main');
+            return;
+        }
+
+        $data = [
+            'bio' => $bio,
+            'experience_years' => $experience !== '' ? (int) $experience : null,
+        ];
+        if ($photoPath) {
+            $data['photo_path'] = $photoPath;
+        }
+
+        (new ProviderProfile())->updateForUser(Auth::id(), $data);
+        Flash::success('Profile updated.');
+        redirect('/provider/profile');
     }
 
     private function ownedOfferedBooking(string $id): ?array
@@ -49,6 +87,7 @@ class DashboardController extends BaseController
             return;
         }
 
+        Dispatcher::markResponded((int) $id, Auth::id(), 'accepted');
         $otp = (new Booking())->acceptOffer((int) $id);
         Notifier::notify(
             (int) $booking['customer_id'],
@@ -71,8 +110,11 @@ class DashboardController extends BaseController
             return;
         }
 
+        Dispatcher::markResponded((int) $id, Auth::id(), 'rejected');
         (new Booking())->rejectOffer((int) $id);
-        Flash::success('Job declined.');
+
+        $reassigned = Dispatcher::autoAssign((int) $id);
+        Flash::success($reassigned ? 'Job declined. It has been offered to another professional.' : 'Job declined.');
         redirect('/provider/dashboard');
     }
 
@@ -95,6 +137,15 @@ class DashboardController extends BaseController
             return;
         }
 
+        try {
+            $beforePhoto = Upload::image(Request::file('before_photo'), 'jobs');
+            if ($beforePhoto) {
+                $bookingModel->setBeforePhoto((int) $id, $beforePhoto);
+            }
+        } catch (\RuntimeException $e) {
+            Flash::error($e->getMessage());
+        }
+
         Notifier::notify((int) $booking['customer_id'], 'Job started', 'Your professional has started the job.', (int) $id);
         Flash::success('Job started.');
         redirect('/bookings/' . $id);
@@ -112,9 +163,34 @@ class DashboardController extends BaseController
             return;
         }
 
+        try {
+            $afterPhoto = Upload::image(Request::file('after_photo'), 'jobs');
+            if ($afterPhoto) {
+                $bookingModel->setAfterPhoto((int) $id, $afterPhoto);
+            }
+        } catch (\RuntimeException $e) {
+            Flash::error($e->getMessage());
+        }
+
         $bookingModel->updateStatus((int) $id, Booking::STATUS_COMPLETED);
         Notifier::notify((int) $booking['customer_id'], 'Job completed', 'Your service is marked complete. Please rate your experience.', (int) $id);
         Flash::success('Job marked complete.');
+        redirect('/bookings/' . $id);
+    }
+
+    public function notifyDelay(string $id): void
+    {
+        $this->requireRole(Auth::ROLE_PROVIDER);
+        $this->verifyCsrf();
+
+        $booking = (new Booking())->find((int) $id);
+        if (!$booking || (int) $booking['provider_id'] !== Auth::id()) {
+            Response::notFound();
+            return;
+        }
+
+        Notifier::notify((int) $booking['customer_id'], 'Running a little late', 'Your professional is running a bit late and is still on the way.', (int) $id);
+        Flash::success('Customer notified.');
         redirect('/bookings/' . $id);
     }
 

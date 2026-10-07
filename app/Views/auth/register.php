@@ -44,6 +44,12 @@ $role = $old['role'] ?? 'customer';
         <div class="form-hint">At least 8 characters.</div>
       </div>
 
+      <div class="form-group">
+        <label for="referral_code">Referral code (optional)</label>
+        <input type="text" id="referral_code" name="referral_code" value="<?= e($old['referral_code'] ?? '') ?>" style="text-transform:uppercase;">
+        <div class="form-hint">Got a code from a friend? You'll both get a wallet bonus.</div>
+      </div>
+
       <div id="provider-fields" <?= $role === 'provider' ? '' : 'hidden' ?>>
         <div class="form-group">
           <label for="city">City you serve</label>

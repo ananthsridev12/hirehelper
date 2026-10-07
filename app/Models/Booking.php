@@ -113,4 +113,22 @@ class Booking extends BaseModel
     {
         return $this->update($bookingId, ['status' => $status]);
     }
+
+    public function reschedule(int $bookingId, string $date, string $slot): bool
+    {
+        return $this->update($bookingId, [
+            'scheduled_date' => $date,
+            'scheduled_time_slot' => $slot,
+        ]);
+    }
+
+    public function setBeforePhoto(int $bookingId, string $path): bool
+    {
+        return $this->update($bookingId, ['before_photo_path' => $path]);
+    }
+
+    public function setAfterPhoto(int $bookingId, string $path): bool
+    {
+        return $this->update($bookingId, ['after_photo_path' => $path]);
+    }
 }

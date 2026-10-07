@@ -9,23 +9,37 @@ $unreadCount = $user ? (new \App\Models\Notification())->unreadCount((int) $user
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= isset($pageTitle) ? e($pageTitle) . ' - HireHelper' : 'HireHelper - Home services at your doorstep' ?></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
 </head>
 <body>
   <header class="site-header">
     <div class="container">
       <a class="brand" href="<?= url('/') ?>">Hire<span>Helper</span></a>
+
+      <form class="header-search" method="get" action="<?= url('/search') ?>">
+        <?= icon('search', 'icon') ?>
+        <input type="text" name="q" placeholder="Search for a service..." value="<?= e($_GET['q'] ?? '') ?>">
+      </form>
+
       <nav class="main-nav">
         <?php if ($user): ?>
           <?php if ($user['role'] === 'customer'): ?>
             <a href="<?= url('/bookings') ?>">My Bookings</a>
             <a href="<?= url('/account/addresses') ?>">Addresses</a>
+            <a href="<?= url('/wallet') ?>">Wallet</a>
           <?php elseif ($user['role'] === 'provider'): ?>
             <a href="<?= url('/provider/dashboard') ?>">Dashboard</a>
+            <a href="<?= url('/provider/profile') ?>">My Profile</a>
           <?php elseif ($user['role'] === 'admin'): ?>
             <a href="<?= url('/admin') ?>">Admin</a>
           <?php endif; ?>
-          <a href="<?= url('/notifications') ?>">Notifications<?= $unreadCount > 0 ? ' <span class="badge-role">' . $unreadCount . '</span>' : '' ?></a>
+          <a class="nav-bell" href="<?= url('/notifications') ?>" title="Notifications">
+            <?= icon('bell', 'icon') ?>
+            <?php if ($unreadCount > 0): ?><span class="pip"><?= $unreadCount > 9 ? '9+' : $unreadCount ?></span><?php endif; ?>
+          </a>
           <div class="nav-user">
             <span><?= e($user['name']) ?></span>
             <span class="badge-role"><?= e($user['role']) ?></span>
@@ -57,7 +71,8 @@ $unreadCount = $user ? (new \App\Models\Notification())->unreadCount((int) $user
     <div class="container">
       &copy; <?= date('Y') ?> HireHelper. Home services, on demand. &middot;
       <a href="<?= url('/privacy') ?>">Privacy</a> &middot;
-      <a href="<?= url('/terms') ?>">Terms</a>
+      <a href="<?= url('/terms') ?>">Terms</a> &middot;
+      <a href="<?= url('/support') ?>">Contact support</a>
     </div>
   </footer>
 

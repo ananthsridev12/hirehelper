@@ -7,6 +7,7 @@ use App\Core\Auth;
 use App\Core\Flash;
 use App\Core\Request;
 use App\Core\Str;
+use App\Core\Upload;
 use App\Models\Category;
 
 class CategoryController extends BaseController
@@ -33,6 +34,13 @@ class CategoryController extends BaseController
             $errors[] = 'Category name is required.';
         }
 
+        try {
+            $imagePath = Upload::image(Request::file('image'), 'categories');
+        } catch (\RuntimeException $e) {
+            $errors[] = $e->getMessage();
+            $imagePath = null;
+        }
+
         if (!empty($errors)) {
             $categories = (new Category())->all('sort_order ASC, name ASC');
             view('admin/categories', ['categories' => $categories, 'errors' => $errors], 'admin');
@@ -49,6 +57,7 @@ class CategoryController extends BaseController
             'name' => $name,
             'slug' => $slug,
             'icon' => $icon,
+            'image_path' => $imagePath,
             'description' => $description,
             'sort_order' => $sortOrder,
             'is_active' => 1,

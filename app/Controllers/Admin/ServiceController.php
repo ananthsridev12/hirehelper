@@ -7,6 +7,7 @@ use App\Core\Auth;
 use App\Core\Flash;
 use App\Core\Request;
 use App\Core\Str;
+use App\Core\Upload;
 use App\Models\Category;
 use App\Models\Service;
 
@@ -52,6 +53,13 @@ class ServiceController extends BaseController
             $errors[] = 'Price must be greater than zero.';
         }
 
+        try {
+            $imagePath = Upload::image(Request::file('image'), 'services');
+        } catch (\RuntimeException $e) {
+            $errors[] = $e->getMessage();
+            $imagePath = null;
+        }
+
         if (!empty($errors)) {
             $services = $this->allWithCategoryName();
             $categories = (new Category())->active();
@@ -70,6 +78,7 @@ class ServiceController extends BaseController
             'name' => $name,
             'slug' => $slug,
             'description' => $description,
+            'image_path' => $imagePath,
             'price' => $price,
             'duration_minutes' => $duration,
             'is_active' => 1,

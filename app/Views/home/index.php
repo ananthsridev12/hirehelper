@@ -5,7 +5,11 @@ $pageTitle = 'Home';
 <section class="hero">
   <div class="container">
     <h1>Home services, done right.</h1>
-    <p>Book trusted professionals for cleaning, repairs, salon and more &mdash; at your doorstep.</p>
+    <p>Book trusted, verified professionals for cleaning, repairs, salon and more &mdash; at your doorstep.</p>
+    <form class="hero-search" method="get" action="<?= url('/search') ?>">
+      <input type="text" name="q" placeholder="Try &ldquo;AC repair&rdquo; or &ldquo;home cleaning&rdquo;">
+      <button type="submit">Search</button>
+    </form>
   </div>
 </section>
 
@@ -19,9 +23,15 @@ $pageTitle = 'Home';
     <div class="grid">
       <?php foreach ($categories as $category): ?>
         <a class="category-card" href="<?= url('/category/' . $category['slug']) ?>">
-          <?= icon($category['icon']) ?>
-          <h3><?= e($category['name']) ?></h3>
-          <p><?= e($category['description']) ?></p>
+          <?php if (!empty($category['image_path'])): ?>
+            <img class="thumb" src="<?= asset($category['image_path']) ?>" alt="<?= e($category['name']) ?>">
+          <?php else: ?>
+            <div class="thumb-fallback"><?= icon($category['icon']) ?></div>
+          <?php endif; ?>
+          <div class="body">
+            <h3><?= e($category['name']) ?></h3>
+            <p><?= e($category['description']) ?></p>
+          </div>
         </a>
       <?php endforeach; ?>
     </div>

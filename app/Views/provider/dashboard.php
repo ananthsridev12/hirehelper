@@ -6,20 +6,28 @@ $pageTitle = 'Provider Dashboard';
 $avg = $rating['avg_rating'] !== null ? round((float) $rating['avg_rating'], 1) : null;
 ?>
 <div class="container">
-  <h1 class="section-title">My Dashboard</h1>
+  <div class="page-header">
+    <h1 class="section-title">My Dashboard</h1>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <?php if ($profile && !empty($profile['photo_path'])): ?>
+        <img class="avatar" src="<?= asset($profile['photo_path']) ?>" alt="My photo">
+      <?php endif; ?>
+      <a class="btn btn-sm btn-outline" href="<?= url('/provider/profile') ?>">Edit Profile</a>
+    </div>
+  </div>
 
   <div class="stat-grid">
     <div class="stat-card">
-      <div class="value"><?= count($bookings) ?></div>
-      <div class="label">Total jobs</div>
+      <div class="stat-icon"><?= icon('calendar') ?></div>
+      <div><div class="value"><?= count($bookings) ?></div><div class="label">Total jobs</div></div>
     </div>
     <div class="stat-card">
-      <div class="value"><?= $avg !== null ? $avg : '-' ?></div>
-      <div class="label"><?= (int) $rating['review_count'] ?> reviews</div>
+      <div class="stat-icon"><?= icon('star') ?></div>
+      <div><div class="value"><?= $avg !== null ? $avg : '-' ?></div><div class="label"><?= (int) $rating['review_count'] ?> reviews</div></div>
     </div>
     <div class="stat-card">
-      <div class="value"><?= $profile && $profile['is_verified'] ? 'Verified' : 'Pending' ?></div>
-      <div class="label">Verification status</div>
+      <div class="stat-icon"><?= icon('shield') ?></div>
+      <div><div class="value"><?= $profile && $profile['is_verified'] ? 'Verified' : 'Pending' ?></div><div class="label">Verification status</div></div>
     </div>
   </div>
 

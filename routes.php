@@ -2,9 +2,12 @@
 
 use App\Controllers\Admin\BookingController as AdminBookingController;
 use App\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Controllers\Admin\CouponController as AdminCouponController;
 use App\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Controllers\Admin\ProviderController as AdminProviderController;
 use App\Controllers\Admin\ServiceController as AdminServiceController;
+use App\Controllers\Admin\SupportController as AdminSupportController;
+use App\Controllers\Admin\ZoneController as AdminZoneController;
 use App\Controllers\AddressController;
 use App\Controllers\Api\AddressController as ApiAddressController;
 use App\Controllers\Api\AuthController as ApiAuthController;
@@ -20,10 +23,13 @@ use App\Controllers\NotificationController;
 use App\Controllers\PageController;
 use App\Controllers\Provider\DashboardController as ProviderDashboardController;
 use App\Controllers\ServiceController;
+use App\Controllers\SupportController;
+use App\Controllers\WalletController;
 
 /** @var App\Core\Router $router */
 
 $router->get('/', [HomeController::class, 'index']);
+$router->get('/search', [HomeController::class, 'search']);
 
 $router->get('/register', [AuthController::class, 'showRegister']);
 $router->post('/register', [AuthController::class, 'register']);
@@ -39,17 +45,29 @@ $router->post('/book/{serviceSlug}', [BookingController::class, 'store']);
 $router->get('/bookings', [BookingController::class, 'index']);
 $router->get('/bookings/{id}', [BookingController::class, 'show']);
 $router->post('/bookings/{id}/cancel', [BookingController::class, 'cancel']);
+$router->post('/bookings/{id}/reschedule', [BookingController::class, 'reschedule']);
+$router->post('/bookings/{id}/rebook', [BookingController::class, 'rebook']);
+$router->get('/bookings/{id}/invoice', [BookingController::class, 'invoice']);
+$router->post('/bookings/{id}/messages', [BookingController::class, 'sendMessage']);
+$router->post('/bookings/{id}/report-issue', [BookingController::class, 'reportIssue']);
 $router->post('/bookings/{id}/review', [BookingController::class, 'review']);
 
 $router->get('/account/addresses', [AddressController::class, 'index']);
 $router->post('/account/addresses', [AddressController::class, 'store']);
 $router->post('/account/addresses/{id}/delete', [AddressController::class, 'destroy']);
 
+$router->get('/wallet', [WalletController::class, 'index']);
+$router->get('/support', [SupportController::class, 'create']);
+$router->post('/support', [SupportController::class, 'store']);
+
 $router->get('/provider/dashboard', [ProviderDashboardController::class, 'index']);
+$router->get('/provider/profile', [ProviderDashboardController::class, 'editProfile']);
+$router->post('/provider/profile', [ProviderDashboardController::class, 'updateProfile']);
 $router->post('/provider/bookings/{id}/accept', [ProviderDashboardController::class, 'accept']);
 $router->post('/provider/bookings/{id}/reject', [ProviderDashboardController::class, 'reject']);
 $router->post('/provider/bookings/{id}/start', [ProviderDashboardController::class, 'startJob']);
 $router->post('/provider/bookings/{id}/complete', [ProviderDashboardController::class, 'completeJob']);
+$router->post('/provider/bookings/{id}/notify-delay', [ProviderDashboardController::class, 'notifyDelay']);
 $router->post('/provider/location-ping', [ProviderDashboardController::class, 'pingLocation']);
 
 $router->get('/notifications', [NotificationController::class, 'index']);
@@ -76,6 +94,19 @@ $router->post('/admin/providers/{id}/suspend', [AdminProviderController::class, 
 
 $router->get('/admin/bookings', [AdminBookingController::class, 'index']);
 $router->post('/admin/bookings/{id}/assign', [AdminBookingController::class, 'assign']);
+$router->get('/admin/bookings/export', [AdminBookingController::class, 'export']);
+
+$router->get('/admin/coupons', [AdminCouponController::class, 'index']);
+$router->post('/admin/coupons', [AdminCouponController::class, 'store']);
+$router->post('/admin/coupons/{id}/toggle', [AdminCouponController::class, 'toggle']);
+
+$router->get('/admin/zones', [AdminZoneController::class, 'index']);
+$router->post('/admin/zones', [AdminZoneController::class, 'store']);
+$router->post('/admin/zones/{id}/toggle', [AdminZoneController::class, 'toggle']);
+$router->post('/admin/zones/{id}/delete', [AdminZoneController::class, 'destroy']);
+
+$router->get('/admin/support', [AdminSupportController::class, 'index']);
+$router->post('/admin/support/{id}/resolve', [AdminSupportController::class, 'resolve']);
 
 // ---------------------------------------------------------------------
 // JSON API for the Flutter app -- bearer-token auth, no CSRF, no
@@ -90,6 +121,7 @@ $router->get('/api/v1/me', [ApiAuthController::class, 'me']);
 $router->get('/api/v1/categories', [ApiCatalogController::class, 'categories']);
 $router->get('/api/v1/categories/{slug}/services', [ApiCatalogController::class, 'services']);
 $router->get('/api/v1/services/{slug}', [ApiCatalogController::class, 'serviceDetail']);
+$router->get('/api/v1/search', [ApiCatalogController::class, 'search']);
 
 $router->get('/api/v1/addresses', [ApiAddressController::class, 'index']);
 $router->post('/api/v1/addresses', [ApiAddressController::class, 'store']);
@@ -112,3 +144,5 @@ $router->post('/api/v1/provider/availability', [ApiProviderController::class, 't
 $router->get('/api/v1/notifications', [ApiNotificationController::class, 'index']);
 $router->post('/api/v1/notifications/mark-read', [ApiNotificationController::class, 'markRead']);
 $router->post('/api/v1/device-tokens', [ApiNotificationController::class, 'registerDeviceToken']);
+
+$router->get('/api/v1/wallet', [ApiAuthController::class, 'wallet']);

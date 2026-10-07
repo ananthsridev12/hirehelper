@@ -12,6 +12,7 @@ $statuses = ['pending', 'offered', 'assigned', 'in_progress', 'completed', 'canc
     <?php foreach ($statuses as $s): ?>
       <a href="<?= url('/admin/bookings?status=' . $s) ?>" class="btn btn-sm <?= $status === $s ? '' : 'btn-outline' ?>"><?= e(ucwords(str_replace('_', ' ', $s))) ?></a>
     <?php endforeach; ?>
+    <a href="<?= url('/admin/bookings/export' . ($status ? '?status=' . $status : '')) ?>" class="btn btn-sm btn-outline">Export CSV</a>
   </div>
 </div>
 

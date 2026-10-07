@@ -2,15 +2,18 @@
 
 namespace App\Controllers\Api;
 
+use App\Core\Dispatcher;
 use App\Core\Geo;
 use App\Core\Notifier;
 use App\Core\Request;
 use App\Core\Response;
 use App\Models\Address;
 use App\Models\Booking;
+use App\Models\Coupon;
 use App\Models\ProviderLocation;
 use App\Models\Review;
 use App\Models\Service;
+use App\Models\ServiceablePincode;
 
 class BookingController extends BaseApiController
 {
@@ -40,11 +43,22 @@ class BookingController extends BaseApiController
         $date = (string) Request::input('scheduled_date', '');
         $slot = (string) Request::input('scheduled_time_slot', '');
         $notes = (string) Request::input('notes', '');
+        $couponCode = trim((string) Request::input('coupon_code', ''));
 
         $address = (new Address())->belongsToUser($addressId, (int) $user['id']);
         if (!$address) $this->fail('Please select a valid address.');
+        if (!(new ServiceablePincode())->isServiceable($address['pincode'])) $this->fail('Sorry, we don\'t serve that pincode yet.');
         if ($date === '' || $date < date('Y-m-d')) $this->fail('Please choose a valid date (today or later).');
         if (!in_array($slot, self::ALLOWED_SLOTS, true)) $this->fail('Please choose a valid time slot.');
+
+        $coupon = null;
+        $discount = 0.0;
+        if ($couponCode !== '') {
+            $coupon = (new Coupon())->findValidByCode($couponCode);
+            if (!$coupon) $this->fail('That coupon code is invalid or expired.');
+            $discount = (new Coupon())->calculateDiscount($coupon, (float) $service['price']);
+            if ($discount <= 0) $this->fail('This coupon doesn\'t apply to this booking.');
+        }
 
         $bookingModel = new Booking();
         $bookingId = $bookingModel->create([
@@ -56,12 +70,19 @@ class BookingController extends BaseApiController
             'scheduled_time_slot' => $slot,
             'status' => Booking::STATUS_PENDING,
             'price' => $service['price'],
+            'coupon_id' => $coupon['id'] ?? null,
+            'discount_amount' => $discount,
             'payment_status' => 'unpaid',
             'notes' => $notes,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
 
+        if ($coupon) {
+            (new Coupon())->incrementUsage((int) $coupon['id']);
+        }
+
+        Dispatcher::autoAssign($bookingId);
         Response::json(['booking' => $bookingModel->detail($bookingId)], 201);
     }
 

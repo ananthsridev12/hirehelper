@@ -13,6 +13,9 @@ $avg = $rating['avg_rating'] !== null ? round((float) $rating['avg_rating'], 1) 
 
   <div class="service-detail">
     <div>
+      <?php if (!empty($service['image_path'])): ?>
+        <img class="service-hero-image" src="<?= asset($service['image_path']) ?>" alt="<?= e($service['name']) ?>">
+      <?php endif; ?>
       <h1 class="section-title"><?= e($service['name']) ?></h1>
       <?php if ($avg !== null): ?>
         <p class="rating"><?= icon('star', 'icon') ?> <?= $avg ?> &middot; <?= (int) $rating['review_count'] ?> reviews</p>
@@ -21,6 +24,10 @@ $avg = $rating['avg_rating'] !== null ? round((float) $rating['avg_rating'], 1) 
         <h3>About this service</h3>
         <p><?= nl2br(e($service['description'])) ?></p>
         <p class="form-hint">Estimated duration: <?= (int) $service['duration_minutes'] ?> minutes</p>
+      </div>
+      <div class="card">
+        <h3><?= icon('shield', 'icon') ?> Verified professionals, guaranteed</h3>
+        <p class="form-hint">Every professional on HireHelper is background-checked and rated by real customers. Not happy with the job? Tell us from your booking page and we'll make it right.</p>
       </div>
     </div>
 

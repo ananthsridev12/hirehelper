@@ -2,6 +2,7 @@
 
 namespace App\Controllers\Api;
 
+use App\Core\Dispatcher;
 use App\Core\Notifier;
 use App\Core\Request;
 use App\Core\Response;
@@ -33,6 +34,7 @@ class ProviderController extends BaseApiController
         $this->requireRole($user, 'provider');
         $booking = $this->ownedOfferedBooking($user, $id);
 
+        Dispatcher::markResponded((int) $id, (int) $user['id'], 'accepted');
         $otp = (new Booking())->acceptOffer((int) $id);
         Notifier::notify(
             (int) $booking['customer_id'],
@@ -49,8 +51,10 @@ class ProviderController extends BaseApiController
         $this->requireRole($user, 'provider');
         $this->ownedOfferedBooking($user, $id);
 
+        Dispatcher::markResponded((int) $id, (int) $user['id'], 'rejected');
         (new Booking())->rejectOffer((int) $id);
-        Response::json(['ok' => true]);
+        $reassigned = Dispatcher::autoAssign((int) $id);
+        Response::json(['ok' => true, 'reassigned' => $reassigned]);
     }
 
     public function start(string $id): void

@@ -4,6 +4,7 @@ import '../../widgets.dart';
 import '../login_screen.dart';
 import '../notifications_screen.dart';
 import '../customer/booking_detail_screen.dart';
+import 'provider_profile_screen.dart';
 
 class ProviderJobsScreen extends StatefulWidget {
   const ProviderJobsScreen({super.key});
@@ -44,6 +45,11 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen> {
       appBar: AppBar(
         title: const Text('My Jobs'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'My profile',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProviderProfileScreen())),
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen())),

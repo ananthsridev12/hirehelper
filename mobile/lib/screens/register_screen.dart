@@ -17,6 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _cityController = TextEditingController();
+  final _referralController = TextEditingController();
 
   String _role = 'customer';
   bool _loading = false;
@@ -51,6 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'city': _cityController.text.trim(),
         'categories': _selectedCategoryIds.toList(),
         'device_label': 'flutter-app',
+        'referral_code': _referralController.text.trim(),
       });
       final user = result['user'] as Map<String, dynamic>;
       await api.saveSession(user, result['token'] as String);
@@ -92,6 +94,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
             TextField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
             const SizedBox(height: 16),
             TextField(controller: _passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'Password (min 8 characters)', border: OutlineInputBorder())),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _referralController,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'Referral code (optional)',
+                helperText: "Got a code from a friend? You'll both get a wallet bonus.",
+                border: OutlineInputBorder(),
+              ),
+            ),
             if (_role == 'provider') ...[
               const SizedBox(height: 16),
               TextField(controller: _cityController, decoration: const InputDecoration(labelText: 'City you serve', border: OutlineInputBorder())),

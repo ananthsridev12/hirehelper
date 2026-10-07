@@ -14,3 +14,13 @@ const String apiBaseUrl = 'https://hire.easi7.in/api/v1';
 // in-progress job screen shows distance as text. Adding a visual map is
 // a natural next step once you have a Maps API key -- see
 // mobile/README.md "Adding a visual map" for where it would plug in.
+
+/// Category/service images and uploaded photos are returned by the API as
+/// paths relative to the website's /assets/ folder (e.g.
+/// "categories/plumber.svg" or "uploads/providers/xxx.png"). This turns one
+/// of those into a full URL the same way the website's `asset()` helper
+/// does, by swapping the API's `/api/v1` suffix for `/assets`.
+String assetUrl(String relativePath) {
+  final siteBase = apiBaseUrl.replaceFirst(RegExp(r'/api/v1/?$'), '');
+  return '$siteBase/assets/${relativePath.replaceFirst(RegExp(r'^/'), '')}';
+}

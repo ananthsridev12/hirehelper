@@ -4,8 +4,11 @@ import '../../widgets.dart';
 import '../login_screen.dart';
 import '../notifications_screen.dart';
 import '../addresses_screen.dart';
+import '../support_screen.dart';
+import '../wallet_screen.dart';
 import 'category_screen.dart';
 import 'my_bookings_screen.dart';
+import 'search_screen.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -60,49 +63,74 @@ class _BrowseTab extends StatelessWidget {
           return List<Map<String, dynamic>>.from(result['categories'] as List);
         },
         builder: (context, categories, reload) {
-          if (categories.isEmpty) {
-            return const Center(child: Text('No service categories available yet.'));
-          }
           return RefreshIndicator(
             onRefresh: () async => reload(),
-            child: GridView.builder(
+            child: ListView(
               padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.1,
-              ),
-              itemCount: categories.length,
-              itemBuilder: (context, i) {
-                final category = categories[i];
-                return Card(
-                  child: InkWell(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => CategoryScreen(category: category)),
+              children: [
+                InkWell(
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SearchScreen())),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.home_repair_service_outlined, color: primaryColor, size: 28),
-                          const Spacer(),
-                          Text(category['name'] as String, style: const TextStyle(fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 4),
-                          Text(
-                            category['description'] as String? ?? '',
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
+                    child: const Row(children: [
+                      Icon(Icons.search, color: Colors.grey),
+                      SizedBox(width: 10),
+                      Text('Search for a service...', style: TextStyle(color: Colors.grey)),
+                    ]),
                   ),
-                );
-              },
+                ),
+                const SizedBox(height: 20),
+                if (categories.isEmpty)
+                  const Padding(padding: EdgeInsets.all(32), child: Center(child: Text('No service categories available yet.')))
+                else
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.95,
+                    ),
+                    itemCount: categories.length,
+                    itemBuilder: (context, i) {
+                      final category = categories[i];
+                      return Card(
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => CategoryScreen(category: category)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  width: double.infinity,
+                                  color: primaryColor.withValues(alpha: 0.08),
+                                  child: RemoteThumb(
+                                    path: category['image_path'] as String?,
+                                    fallback: const Center(child: Icon(Icons.home_repair_service_outlined, color: primaryColor, size: 32)),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Text(category['name'] as String, style: const TextStyle(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+              ],
             ),
           );
         },
@@ -162,6 +190,18 @@ class _AccountTabState extends State<_AccountTab> {
             title: const Text('Notifications'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+          ),
+          ListTile(
+            leading: const Icon(Icons.account_balance_wallet_outlined, color: accentColor),
+            title: const Text('Wallet & referrals'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WalletScreen())),
+          ),
+          ListTile(
+            leading: const Icon(Icons.support_agent_outlined),
+            title: const Text('Help & support'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SupportScreen())),
           ),
           const Divider(),
           ListTile(

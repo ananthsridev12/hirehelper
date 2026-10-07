@@ -28,9 +28,24 @@ class CategoryScreen extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, i) {
                 final service = services[i];
+                final imagePath = (service['image_path'] as String?) ?? (category['image_path'] as String?);
                 return Card(
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16),
+                    leading: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: RemoteThumb(
+                          path: imagePath,
+                          fallback: Container(
+                            color: primaryColor.withValues(alpha: 0.08),
+                            child: const Icon(Icons.home_repair_service_outlined, color: primaryColor),
+                          ),
+                        ),
+                      ),
+                    ),
                     title: Text(service['name'] as String, style: const TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: Text('${service['duration_minutes']} mins'),
                     trailing: Text(formatMoney(double.parse('${service['price']}')), style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),

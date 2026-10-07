@@ -28,6 +28,7 @@ class _BookingScreenState extends State<BookingScreen> {
   DateTime? _selectedDate;
   String? _selectedSlot;
   final _notesController = TextEditingController();
+  final _couponController = TextEditingController();
   bool _submitting = false;
 
   @override
@@ -74,6 +75,7 @@ class _BookingScreenState extends State<BookingScreen> {
         'scheduled_date': DateFormat('yyyy-MM-dd').format(_selectedDate!),
         'scheduled_time_slot': _selectedSlot,
         'notes': _notesController.text.trim(),
+        'coupon_code': _couponController.text.trim(),
       });
       final booking = result['booking'] as Map<String, dynamic>;
       if (!mounted) return;
@@ -152,6 +154,16 @@ class _BookingScreenState extends State<BookingScreen> {
                       maxLines: 3,
                       decoration: const InputDecoration(
                         labelText: 'Notes for the professional (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _couponController,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: const InputDecoration(
+                        labelText: 'Coupon code (optional)',
+                        prefixIcon: Icon(Icons.local_offer_outlined),
                         border: OutlineInputBorder(),
                       ),
                     ),

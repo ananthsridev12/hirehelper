@@ -9,11 +9,13 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Models\Address;
 use App\Models\Booking;
+use App\Models\BookingMessage;
 use App\Models\Coupon;
 use App\Models\ProviderLocation;
 use App\Models\Review;
 use App\Models\Service;
 use App\Models\ServiceablePincode;
+use App\Models\SupportTicket;
 
 class BookingController extends BaseApiController
 {
@@ -135,6 +137,103 @@ class BookingController extends BaseApiController
             Notifier::notify((int) $booking['provider_id'], 'Booking cancelled', 'The customer cancelled a job that was offered to you.', (int) $id);
         }
         Response::json(['ok' => true]);
+    }
+
+    public function reschedule(string $id): void
+    {
+        $user = $this->authenticate();
+        $bookingModel = new Booking();
+        $booking = $bookingModel->find((int) $id);
+        if (!$booking || (int) $booking['customer_id'] !== (int) $user['id']) {
+            $this->fail('Booking not found.', 404);
+            return;
+        }
+        if (!in_array($booking['status'], [Booking::STATUS_PENDING, Booking::STATUS_OFFERED, Booking::STATUS_ASSIGNED], true)) {
+            $this->fail('This booking can no longer be rescheduled.');
+            return;
+        }
+
+        $date = (string) Request::input('scheduled_date', '');
+        $slot = (string) Request::input('scheduled_time_slot', '');
+        if ($date < date('Y-m-d') || !in_array($slot, self::ALLOWED_SLOTS, true)) {
+            $this->fail('Please choose a valid date and time slot.');
+            return;
+        }
+
+        $bookingModel->reschedule((int) $id, $date, $slot);
+        if ($booking['provider_id']) {
+            Notifier::notify((int) $booking['provider_id'], 'Booking rescheduled', "New time: {$date}, {$slot}.", (int) $id);
+        }
+        Response::json(['booking' => $bookingModel->detail((int) $id)]);
+    }
+
+    public function messages(string $id): void
+    {
+        $user = $this->authenticate();
+        $booking = (new Booking())->find((int) $id);
+        $isOwner = $booking && (int) $booking['customer_id'] === (int) $user['id'];
+        $isProvider = $booking && (int) $booking['provider_id'] === (int) $user['id'];
+        if (!$booking || (!$isOwner && !$isProvider)) {
+            $this->fail('Booking not found.', 404);
+            return;
+        }
+        Response::json(['messages' => (new BookingMessage())->forBooking((int) $id)]);
+    }
+
+    public function sendMessage(string $id): void
+    {
+        $user = $this->authenticate();
+        $booking = (new Booking())->find((int) $id);
+        $isOwner = $booking && (int) $booking['customer_id'] === (int) $user['id'];
+        $isProvider = $booking && (int) $booking['provider_id'] === (int) $user['id'];
+        if (!$booking || (!$isOwner && !$isProvider)) {
+            $this->fail('Booking not found.', 404);
+            return;
+        }
+
+        $message = trim((string) Request::input('message', ''));
+        if ($message === '') {
+            $this->fail('Message cannot be empty.');
+            return;
+        }
+
+        (new BookingMessage())->create([
+            'booking_id' => $id,
+            'sender_id' => $user['id'],
+            'message' => mb_substr($message, 0, 1000),
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        $recipientId = $isOwner ? $booking['provider_id'] : $booking['customer_id'];
+        if ($recipientId) {
+            Notifier::notify((int) $recipientId, 'New message', mb_substr($message, 0, 100), (int) $id);
+        }
+        Response::json(['messages' => (new BookingMessage())->forBooking((int) $id)], 201);
+    }
+
+    public function reportIssue(string $id): void
+    {
+        $user = $this->authenticate();
+        $booking = (new Booking())->find((int) $id);
+        if (!$booking || (int) $booking['customer_id'] !== (int) $user['id']) {
+            $this->fail('Booking not found.', 404);
+            return;
+        }
+
+        $message = trim((string) Request::input('message', ''));
+        if ($message === '') {
+            $this->fail('Please describe the issue.');
+            return;
+        }
+
+        (new SupportTicket())->create([
+            'user_id' => $user['id'],
+            'booking_id' => $id,
+            'subject' => 'Issue with booking #' . $id,
+            'message' => $message,
+            'status' => 'open',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        Response::json(['ok' => true], 201);
     }
 
     public function review(string $id): void

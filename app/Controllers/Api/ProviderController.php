@@ -127,4 +127,45 @@ class ProviderController extends BaseApiController
         $profileModel->updateForUser((int) $user['id'], ['is_available' => $newValue]);
         Response::json(['is_available' => (bool) $newValue]);
     }
+
+    public function profile(): void
+    {
+        $user = $this->authenticate();
+        $this->requireRole($user, 'provider');
+        $profileModel = new ProviderProfile();
+        Response::json([
+            'profile' => $profileModel->findByUserId((int) $user['id']),
+            'rating' => $profileModel->ratingSummary((int) $user['id']),
+        ]);
+    }
+
+    public function updateProfile(): void
+    {
+        $user = $this->authenticate();
+        $this->requireRole($user, 'provider');
+
+        $bio = (string) Request::input('bio', '');
+        $experience = Request::input('experience_years', '');
+
+        (new ProviderProfile())->updateForUser((int) $user['id'], [
+            'bio' => $bio,
+            'experience_years' => $experience !== '' ? (int) $experience : null,
+        ]);
+        Response::json(['profile' => (new ProviderProfile())->findByUserId((int) $user['id'])]);
+    }
+
+    public function notifyDelay(string $id): void
+    {
+        $user = $this->authenticate();
+        $this->requireRole($user, 'provider');
+
+        $booking = (new Booking())->find((int) $id);
+        if (!$booking || (int) $booking['provider_id'] !== (int) $user['id']) {
+            $this->fail('Job not found.', 404);
+            return;
+        }
+
+        Notifier::notify((int) $booking['customer_id'], 'Running a little late', 'Your professional is running a bit late and is still on the way.', (int) $id);
+        Response::json(['ok' => true]);
+    }
 }

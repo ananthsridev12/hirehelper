@@ -18,11 +18,24 @@ class ServiceDetailScreen extends StatelessWidget {
           final rating = result['rating'] as Map<String, dynamic>;
           final avg = rating['avg_rating'];
 
-          return Padding(
+          return ListView(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            children: [
+              if ((service['image_path'] as String?)?.isNotEmpty == true)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: RemoteThumb(
+                      path: service['image_path'] as String?,
+                      fallback: Container(color: primaryColor.withValues(alpha: 0.08)),
+                    ),
+                  ),
+                ),
+              if ((service['image_path'] as String?)?.isNotEmpty == true) const SizedBox(height: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 Text(service['name'] as String, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 if (avg != null) ...[
                   const SizedBox(height: 6),
@@ -36,7 +49,7 @@ class ServiceDetailScreen extends StatelessWidget {
                 Text(service['description'] as String? ?? '', style: const TextStyle(height: 1.5)),
                 const SizedBox(height: 8),
                 Text('Estimated duration: ${service['duration_minutes']} minutes', style: const TextStyle(color: Colors.grey)),
-                const Spacer(),
+                const SizedBox(height: 28),
                 Row(
                   children: [
                     Text(
@@ -53,8 +66,9 @@ class ServiceDetailScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              ],
-            ),
+                ],
+              ),
+            ],
           );
         },
       ),

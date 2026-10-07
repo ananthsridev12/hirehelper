@@ -15,6 +15,7 @@ use App\Controllers\Api\BookingController as ApiBookingController;
 use App\Controllers\Api\CatalogController as ApiCatalogController;
 use App\Controllers\Api\NotificationController as ApiNotificationController;
 use App\Controllers\Api\ProviderController as ApiProviderController;
+use App\Controllers\Api\SupportController as ApiSupportController;
 use App\Controllers\AuthController;
 use App\Controllers\BookingController;
 use App\Controllers\CategoryController;
@@ -131,6 +132,10 @@ $router->get('/api/v1/bookings', [ApiBookingController::class, 'index']);
 $router->post('/api/v1/services/{serviceSlug}/book', [ApiBookingController::class, 'store']);
 $router->get('/api/v1/bookings/{id}', [ApiBookingController::class, 'show']);
 $router->post('/api/v1/bookings/{id}/cancel', [ApiBookingController::class, 'cancel']);
+$router->post('/api/v1/bookings/{id}/reschedule', [ApiBookingController::class, 'reschedule']);
+$router->get('/api/v1/bookings/{id}/messages', [ApiBookingController::class, 'messages']);
+$router->post('/api/v1/bookings/{id}/messages', [ApiBookingController::class, 'sendMessage']);
+$router->post('/api/v1/bookings/{id}/report-issue', [ApiBookingController::class, 'reportIssue']);
 $router->post('/api/v1/bookings/{id}/review', [ApiBookingController::class, 'review']);
 
 $router->get('/api/v1/provider/jobs', [ApiProviderController::class, 'jobs']);
@@ -140,9 +145,14 @@ $router->post('/api/v1/provider/jobs/{id}/start', [ApiProviderController::class,
 $router->post('/api/v1/provider/jobs/{id}/complete', [ApiProviderController::class, 'complete']);
 $router->post('/api/v1/provider/location-ping', [ApiProviderController::class, 'pingLocation']);
 $router->post('/api/v1/provider/availability', [ApiProviderController::class, 'toggleAvailability']);
+$router->get('/api/v1/provider/profile', [ApiProviderController::class, 'profile']);
+$router->post('/api/v1/provider/profile', [ApiProviderController::class, 'updateProfile']);
+$router->post('/api/v1/provider/jobs/{id}/notify-delay', [ApiProviderController::class, 'notifyDelay']);
 
 $router->get('/api/v1/notifications', [ApiNotificationController::class, 'index']);
 $router->post('/api/v1/notifications/mark-read', [ApiNotificationController::class, 'markRead']);
 $router->post('/api/v1/device-tokens', [ApiNotificationController::class, 'registerDeviceToken']);
 
 $router->get('/api/v1/wallet', [ApiAuthController::class, 'wallet']);
+
+$router->post('/api/v1/support', [ApiSupportController::class, 'store']);
